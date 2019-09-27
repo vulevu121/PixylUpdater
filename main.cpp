@@ -2,11 +2,21 @@
 #include <QQmlApplicationEngine>
 #include <QFont>
 
+#include "GetSettings.h"
+#include "Firebase.h"
+
 int main(int argc, char *argv[])
 {
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
     QGuiApplication app(argc, argv);
+
+    qmlRegisterType<GetSettings>("GetSettings", 1, 0, "GetSettings");
+    qmlRegisterType<Firebase>("Firebase", 1, 0, "Firebase");
+
+    app.setOrganizationName("Pixyl");
+    app.setOrganizationDomain("gopixyl.com");
+    app.setApplicationName("PixylBooth");
 
     QFont font("Helvetica");
     font.setStyleHint(QFont::OldEnglish);

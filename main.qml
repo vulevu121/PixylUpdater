@@ -3,8 +3,12 @@ import QtQuick.Window 2.12
 import QtQuick.Controls 2.12
 import QtQuick.Controls.Material 2.12
 import QtQuick.Layouts 1.12
+import Qt.labs.settings 1.0
+import GetSettings 1.0
+import Firebase 1.0
 
 Window {
+    id: mainWindow
     visible: true
     width: 320
     height: 480
@@ -12,9 +16,71 @@ Window {
     title: qsTr("PixylUpdater")
     opacity: 1
 
+    property string idToken
+    property string refreshToken
+
     function pixel(p) {
         return p*2;
+
     }
+
+    Firebase {
+        id: firebase
+
+        idToken: mainWindow.idToken
+        refreshToken: mainWindow.refreshToken
+
+//        onAuthenticationSuccess: {
+//            mainWindow.idToken = idToken
+//            mainWindow.refreshToken = refreshToken
+//        }
+
+
+        onAuthenticationError: {
+            console.log(msg)
+        }
+
+        onRequestError: {
+            console.log(msg)
+        }
+
+        onUserInfoReceived: {
+            console.log("User info received")
+//            loadingBar.running = false
+//            loginPopup.close()
+
+
+        }
+
+    }
+
+    GetSettings {
+        id: getSettings
+    }
+
+    Timer {
+        interval: 1000
+        running: true
+        onTriggered: {
+            var app = "PixylBooth"
+            appModel.append({
+                                "name": app,
+                                "installDir": getSettings.installDir(app),
+                                "version": getSettings.version(app),
+                                "latestVersion": "1.0"
+                            })
+            app = "PixylPush"
+            appModel.append({
+                                "name": app,
+                                "installDir": getSettings.installDir(app),
+                                "version":getSettings.version(app),
+                                "latestVersion": "1.0"
+                            })
+
+            firebase.authenticate("vulevu121@gmail.com", "V73911937l")
+        }
+    }
+
 
     ColumnLayout {
         anchors {
@@ -60,6 +126,7 @@ Window {
 //                bottom: parent.bottom
 //            }
 
+            // ====== App View ======
             Item {
                 id: appView
                 ListView {
@@ -92,7 +159,7 @@ Window {
                                 color: Material.foreground
                             }
                             Text {
-                                text: path
+                                text: installDir
                                 Layout.fillWidth: true
                                 font.pixelSize: pixel(6)
                                 color: Material.accent
@@ -120,6 +187,12 @@ Window {
                         RoundButton {
                             text: "Update"
                             radius: pixel(2)
+                            onClicked: {
+//                                console.log(Qt.application.name)
+//                                boothSettings.sync()
+//                                console.log(boothSettings.installDir)
+//                                console.log(boothSettings.version)
+                            }
                         }
 
                     }
@@ -129,23 +202,24 @@ Window {
 
                 ListModel {
                     id: appModel
-                    ListElement {
-                        name: "PixylBooth"
-                        version: "0.9"
-                        path: "C:/PixylBooth"
-                        latestVersion: "1.0"
-                    }
+//                    ListElement {
+//                        name: "PixylBooth"
+//                        version: "0.9"
+//                        path: "C:/PixylBooth"
+//                        latestVersion: "1.0"
+//                    }
 
-                    ListElement {
-                        name: "PixylPush"
-                        version: "0.5"
-                        path: "C:/PixylBooth"
-                        latestVersion: "1.0"
-                    }
+//                    ListElement {
+//                        name: "PixylPush"
+//                        version: "0.5"
+//                        path: "C:/PixylBooth"
+//                        latestVersion: "1.0"
+//                    }
 
                 }
             }
 
+            // ======= Settings View =======
             Item {
                 id: settingsView
 
@@ -154,7 +228,7 @@ Window {
                         fill: parent
                     }
                     Switch {
-                        text: "Check Automatically"
+                        text: "Check Periodically"
                         Layout.fillWidth: true
                     }
 
@@ -162,6 +236,7 @@ Window {
                         text: "Auto Update"
                         Layout.fillWidth: true
                     }
+
 
                     RowLayout {}
                 }
@@ -173,10 +248,27 @@ Window {
 
         }
 
+        ProgressBar {
+            id: progressBar
+            Layout.fillWidth: true
+            value: 0.5
+
+            NumberAnimation {
+                running: true
+                loops: Animation.Infinite
+                properties: "value"
+                target: progressBar
+                from: 0.0
+                to: 1.0
+                duration: 1000
+            }
+        }
+
         Rectangle {
             Layout.fillWidth: true
             height: pixel(50)
             color: "black"
+            opacity: 0.5
             clip: true
 
             ListView {
@@ -186,6 +278,7 @@ Window {
 
                 anchors {
                     fill: parent
+                    margins: pixel(2)
                 }
 
                 model: msgModel
@@ -218,21 +311,7 @@ Window {
         }
 
 
-        ProgressBar {
-            id: progressBar
-            Layout.fillWidth: true
-            value: 0.5
 
-            NumberAnimation {
-                running: true
-                loops: Animation.Infinite
-                properties: "value"
-                target: progressBar
-                from: 0.0
-                to: 1.0
-                duration: 1000
-            }
-        }
     }
 
 
