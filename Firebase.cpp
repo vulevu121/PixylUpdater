@@ -33,6 +33,7 @@ void Firebase::authenticate(const QString &user, const QString &password) {
     }
 
     qDebug() << "[Firebase] Authenticating";
+    emit status("Authenticating...");
 
     QUrl endpoint("https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key=" + key);
     QNetworkRequest req(endpoint);
@@ -58,6 +59,7 @@ void Firebase::authenticate(const QString &user, const QString &password) {
 }
 
 void Firebase::authenticateReply(QNetworkReply *reply) {
+    manager->disconnect();
     if(reply->error()) {
         qDebug() << "[Firebase]" << reply->error() << reply->errorString();
         if (reply->error() == QNetworkReply::HostNotFoundError) {
@@ -89,11 +91,12 @@ void Firebase::authenticateReply(QNetworkReply *reply) {
                 userJsonObject = &jsonObject;
 
 //                qDebug() << userJsonObject->value("idToken").toString();
-                manager->disconnect();
-                m_idToken = idToken;
-                m_refreshToken = refreshToken;
+
+                m_idToken = jsonObject["idToken"].toString();
+                m_refreshToken = jsonObject["refreshToken"].toString();
 //                getAccountInfo();
-                getLatestDownload();
+//                getLatestDownload();
+                emit status("Connected");
                 emit authenticationSuccess("Login successful");
             }
         } else {
@@ -101,8 +104,6 @@ void Firebase::authenticateReply(QNetworkReply *reply) {
         }
 
     }
-
-
 }
 
 void Firebase::getUserData() {
@@ -134,8 +135,6 @@ void Firebase::getUserData() {
     }
 
 }
-
-
 
 void Firebase::getUserDataReply(QNetworkReply *reply) {
     if(reply->error()) {
@@ -185,6 +184,7 @@ void Firebase::getLatestDownload() {
 
 void Firebase::getLatestDownloadReply(QNetworkReply *reply) {
 //    qDebug() << "getLatestDownloadReply";
+    manager->disconnect();
     if(reply->error()) {
         QByteArray response = reply->readAll();
         QJsonDocument jsonDoc = QJsonDocument::fromJson(response);
@@ -193,6 +193,7 @@ void Firebase::getLatestDownloadReply(QNetworkReply *reply) {
         qDebug() << "[Firebase]" << errString;
         emit requestError(errString);
     } else {
+
         QString downloadLink;
         QByteArray response = reply->readAll();
 
@@ -202,23 +203,69 @@ void Firebase::getLatestDownloadReply(QNetworkReply *reply) {
 //        userInfoJsonObject = &jsonObject;
 
         downloadLink = jsonObject["fields"].toObject()["latestDownload"].toObject()["stringValue"].toString();
-//        qDebug() << jsonObject["fields"].toObject()["registration"].toObject()["stringValue"].toString();
+
         if (downloadLink.length() > 0) {
-            qDebug() << "[Firebase] Link is" << downloadLink;
+//            qDebug() << "[Firebase] Link is" << downloadLink;
             downloadLatestRelease(downloadLink);
         }
 
     }
-    manager->disconnect();
 
+//    manager->disconnect();
 
 
 }
 
-void Firebase::downloadLatestRelease(const QString &downloadLink) {
+void Firebase::getFields(const QString &path) {
+    manager->disconnect();
     if (manager == nullptr) {
         manager = new QNetworkAccessManager(this);
     }
+
+    qDebug() << "[Firebase] Getting fields";
+
+    QUrl endpoint("https://firestore.googleapis.com/v1/projects/pixylbooth/databases/(default)/documents" + path);
+    QNetworkRequest req(endpoint);
+
+    QString authHeader("Bearer " + userJsonObject->value("idToken").toString());
+    req.setRawHeader("Authorization", authHeader.toUtf8());
+    manager->get(req);
+
+    connect(this->manager, SIGNAL(finished(QNetworkReply*)),
+            this, SLOT(getFieldsReply(QNetworkReply*)));
+}
+
+void Firebase::getFieldsReply(QNetworkReply *reply) {
+    manager->disconnect();
+    if(reply->error()) {
+        QByteArray response = reply->readAll();
+        QJsonDocument jsonDoc = QJsonDocument::fromJson(response);
+        QJsonObject jsonObject = jsonDoc.object();
+        QString errString = jsonObject["error"].toObject()["message"].toString() + reply->errorString();
+        qDebug() << "[Firebase]" << errString;
+        emit requestError(errString);
+    } else {
+        QByteArray response = reply->readAll();
+
+        QJsonDocument jsonDoc = QJsonDocument::fromJson(response);
+        QJsonObject jsonObject = jsonDoc.object();
+
+        qDebug() << response;
+
+        emit fieldsReceived(jsonObject);
+//        qDebug() << jsonObject;
+//        qDebug() << jsonObject["fields"];
+    }
+}
+
+
+
+void Firebase::downloadLatestRelease(const QString &downloadLink) {
+    manager->disconnect();
+    if (manager == nullptr) {
+        manager = new QNetworkAccessManager(this);
+    }
+//    manager = new QNetworkAccessManager(this);
 
 
     qDebug() << "[Firebase] Downloading" << downloadLink;
@@ -232,18 +279,20 @@ void Firebase::downloadLatestRelease(const QString &downloadLink) {
 }
 
 void Firebase::downloadLatestReleaseReply(QNetworkReply *reply) {
-    qDebug() << "Writing to file";
-    QString filePath = "C:/Users/vulev/Documents/PixylBooth/PixylBooth_Update2.exe";
+    manager->disconnect();
+
+    QString filePath = "C:/Users/Vu/Documents/PixylBooth/PixylBooth_Update2.exe";
+    qDebug() << "[Firebase] Writing to file" << filePath;
     QFile file(filePath);
     file.open(QIODevice::WriteOnly | QIODevice::Truncate);
-    if(file.exists()) {
-        file.write(reply->readAll());
-        file.flush();
-        file.close();
-    }
+    file.write(reply->readAll());
+    file.flush();
+    file.close();
+
     reply->deleteLater();
-    qDebug() << "Download Completed!" << filePath;
-    manager->disconnect();
+    qDebug() << "[Firebase] Download completed";
+
+
 }
 
 void Firebase::getAccountInfo() {
@@ -271,9 +320,6 @@ void Firebase::getAccountInfo() {
         connect(this->manager, SIGNAL(finished(QNetworkReply*)),
                 this, SLOT(getAccountInfoReply(QNetworkReply*)));
     }
-
-
-
 }
 
 void Firebase::getAccountInfoReply(QNetworkReply *reply) {

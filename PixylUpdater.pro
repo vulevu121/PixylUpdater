@@ -16,7 +16,6 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         Firebase.cpp \
-        Firebase.cpp \
         GetSettings.cpp \
         main.cpp
 

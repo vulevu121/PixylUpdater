@@ -42,6 +42,8 @@ signals:
     void authenticationError(const QString &msg);
     void authenticationSuccess(const QString &msg);
     void requestError(const QString &msg);
+    void status(const QString &msg);
+    void fieldsReceived(QJsonObject json);
 
 public slots:
     void authenticate(const QString &user, const QString &password);
@@ -49,7 +51,7 @@ public slots:
     void getLatestDownload();
     void getAccountInfo();
     void downloadLatestRelease(const QString &downloadLink);
-
+    void getFields(const QString &path);
 
 private slots:
     void authenticateReply(QNetworkReply *reply);
@@ -57,6 +59,7 @@ private slots:
     void getUserDataReply(QNetworkReply *reply);
     void getLatestDownloadReply(QNetworkReply *reply);
     void downloadLatestReleaseReply(QNetworkReply *reply);
+    void getFieldsReply(QNetworkReply *reply);
 };
 
 #endif // FIREBASE_H

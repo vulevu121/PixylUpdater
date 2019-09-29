@@ -30,11 +30,12 @@ Window {
         idToken: mainWindow.idToken
         refreshToken: mainWindow.refreshToken
 
-//        onAuthenticationSuccess: {
+        onAuthenticationSuccess: {
 //            mainWindow.idToken = idToken
 //            mainWindow.refreshToken = refreshToken
-//        }
-
+            console.log(msg)
+            getFields("/apps/pixylbooth")
+        }
 
         onAuthenticationError: {
             console.log(msg)
@@ -48,9 +49,20 @@ Window {
             console.log("User info received")
 //            loadingBar.running = false
 //            loginPopup.close()
+        }
+
+        onStatus: {
+            msgModel.append({"msg": msg})
+        }
+
+        onFieldsReceived: {
+            console.log(json["fields"]["latestDownload"]["stringValue"])
+            console.log(json["fields"]["latestVersion"]["doubleValue"])
 
 
         }
+
+
 
     }
 
@@ -278,7 +290,7 @@ Window {
 
                 anchors {
                     fill: parent
-                    margins: pixel(2)
+                    margins: pixel(1)
                 }
 
                 model: msgModel
@@ -292,10 +304,10 @@ Window {
                     anchors {
                         left: parent.left
                         right: parent.right
-                        margins: pixel(5)
+                        margins: pixel(1)
                     }
-                    height: pixel(40)
-                    text: time + " " + msg
+//                    height: pixel(40)
+                    text: msg
                     color: Material.foreground
                 }
             }
@@ -303,10 +315,10 @@ Window {
             ListModel {
                 id: msgModel
 
-                ListElement {
-                    time: "[2019/9/19 9:47 PM]"
-                    msg: "Started"
-                }
+//                ListElement {
+//                    time: "[2019/9/19 9:47 PM]"
+//                    msg: "Started"
+//                }
             }
         }
 
