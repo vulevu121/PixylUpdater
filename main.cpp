@@ -1,6 +1,7 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QFont>
+#include <QIcon>
 
 #include "GetSettings.h"
 #include "Firebase.h"
@@ -13,6 +14,8 @@ int main(int argc, char *argv[])
 
     qmlRegisterType<GetSettings>("GetSettings", 1, 0, "GetSettings");
     qmlRegisterType<Firebase>("Firebase", 1, 0, "Firebase");
+
+    app.setWindowIcon(QIcon("qrc:/icons/cellphone-arrow-down"));
 
     app.setOrganizationName("Pixyl");
     app.setOrganizationDomain("gopixyl.com");

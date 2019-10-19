@@ -21,7 +21,6 @@ Window {
 
     function pixel(p) {
         return p*2;
-
     }
 
     Firebase {
@@ -31,35 +30,27 @@ Window {
         refreshToken: mainWindow.refreshToken
 
         onAuthenticationSuccess: {
-//            mainWindow.idToken = idToken
-//            mainWindow.refreshToken = refreshToken
-            console.log(msg)
-            getFields("/apps/pixylbooth")
+            progressBar.stop()
         }
 
         onAuthenticationError: {
-            console.log(msg)
+            progressBar.stop()
         }
 
         onRequestError: {
-            console.log(msg)
+//            console.log(msg)
+//            msgModel.append({"msg": msg})
+
+            msgModel.appendMsg(msg)
         }
 
         onUserInfoReceived: {
             console.log("User info received")
-//            loadingBar.running = false
-//            loginPopup.close()
         }
 
         onStatus: {
-            msgModel.append({"msg": msg})
-        }
-
-        onFieldsReceived: {
-            console.log(json["fields"]["latestDownload"]["stringValue"])
-            console.log(json["fields"]["latestVersion"]["doubleValue"])
-
-
+//            msgModel.append({"msg": msg})
+            msgModel.appendMsg(msg)
         }
 
 
@@ -71,22 +62,23 @@ Window {
     }
 
     Timer {
-        interval: 1000
+        interval: 500
         running: true
         onTriggered: {
+            progressBar.run()
             var app = "PixylBooth"
             appModel.append({
                                 "name": app,
-                                "installDir": getSettings.installDir(app),
+                                "exePath": getSettings.exePath(app),
                                 "version": getSettings.version(app),
-                                "latestVersion": "1.0"
+                                "latestVersion": ""
                             })
             app = "PixylPush"
             appModel.append({
                                 "name": app,
-                                "installDir": getSettings.installDir(app),
-                                "version":getSettings.version(app),
-                                "latestVersion": "1.0"
+                                "exePath": getSettings.exePath(app),
+                                "version": getSettings.version(app),
+                                "latestVersion": ""
                             })
 
             firebase.authenticate("vulevu121@gmail.com", "V73911937l")
@@ -105,12 +97,7 @@ Window {
             position: TabBar.Header
             currentIndex: swipeView.currentIndex
             Layout.fillWidth: true
-//            anchors {
-//                top: parent.top
-//                left: parent.left
-//                right: parent.right
-//    //            horizontalCenter: parent.horizontalCenter
-//            }
+
             background: Rectangle {
                 color: Material.background
                 radius: pixel(3)
@@ -118,10 +105,12 @@ Window {
 
             TabButton {
                 text: qsTr("Apps")
+                icon.source: "qrc:/icons/apps"
             }
 
             TabButton {
                 text: qsTr("Settings")
+                icon.source: "qrc:/icons/tune"
             }
         }
 
@@ -131,82 +120,181 @@ Window {
             Layout.fillWidth: true
             Layout.fillHeight: true
 
-//            anchors {
-//                top: tabBar.bottom
-//                left: parent.left
-//                right: parent.right
-//                bottom: parent.bottom
-//            }
 
             // ====== App View ======
             Item {
                 id: appView
-                ListView {
-                    id: appList
-                    keyNavigationWraps: false
-                    boundsBehavior: Flickable.StopAtBounds
-                    model: appModel
-                    delegate: appDelegate
+
+                Rectangle {
                     anchors {
                         fill: parent
-                        margins: pixel(10)
+//                        margins: pixel(10)
                     }
+                    color: "transparent"
+                    clip: true
+                    ListView {
+                        id: appList
+                        keyNavigationWraps: false
+    //                    boundsBehavior: Flickable.StopAtBounds
+                        model: appModel
+                        delegate: appDelegate
 
-                    ScrollBar.vertical: ScrollBar {}
+                        anchors {
+                            fill: parent
+    //                        margins: pixel(10)
+                        }
+                        ScrollBar.vertical: ScrollBar {}
+                    }
                 }
+
 
                 Component {
                     id: appDelegate
 
-                    RowLayout {
+                    ColumnLayout {
                         height: pixel(30)
                         width: parent.width
 
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            Text {
-                                text: name + " " + version
-                                Layout.fillWidth: true
-                                font.pixelSize: pixel(10)
-                                color: Material.foreground
+                        Connections {
+                            target: firebase
+                            onDocumentReceived: {
+                                var appName = String(name)
+                                var path = String(json["name"])
+//                                console.log(json["fields"])
+                                var latestVersion = String(json["fields"]["latestVersion"]["stringValue"])
+                                var latestDownload = String(json["fields"]["latestDownload"]["stringValue"])
+                                if (path.indexOf("/apps/" + appName.toLowerCase()) >= 0) {
+                                    appModel.set(index, {"latestVersion": latestVersion})
+                                    appModel.set(index, {"latestDownload": latestDownload})
+                                }
                             }
-                            Text {
-                                text: installDir
-                                Layout.fillWidth: true
-                                font.pixelSize: pixel(6)
-                                color: Material.accent
+
+                            onDownloadCompleted: {
+                                var appName = String(name)
+                                var path = String(savePath)
+
+                                if (path.indexOf(appName) >= 0) {
+                                    appProgressBar.stop()
+//                                    getSettings.setVersion(appName, String(latestVersion))
+//                                    appModel.set(index, {"version": getSettings.version(appName)})
+                                }
+
                             }
+
+                            onRequestError: {
+                                appProgressBar.stop()
+                            }
+
                         }
-                        Text {
-                            id: latestText
-                            text: latestVersion
-                            font.pixelSize: pixel(10)
-                            color: Material.accent
+
+                        Timer {
+                            id: checkTimer
+                            interval: (index + 1) * 1000
+                            repeat: true
+                            running: true
+
+                            onTriggered: {
+                                var appName = String(appModel.get(index).name)
+                                var latestVersion = String(appModel.get(index).latestVersion)
+
+                                if (latestVersion.length === 0) {
+                                    firebase.getDocument("/apps/" + appName.toLowerCase())
+                                }
+                                else {
+                                    checkTimer.stop()
+                                }
+
+                            }
+
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                Layout.leftMargin: pixel(4)
+
+                                Text {
+                                    text: name + " " + version
+                                    Layout.fillWidth: true
+
+                                    font.pixelSize: pixel(10)
+                                    color: Material.foreground
+                                }
+                                Text {
+                                    text: exePath
+                                    Layout.fillWidth: true
+                                    font.pixelSize: pixel(6)
+                                    color: Material.accent
+                                    elide: Text.ElideMiddle
+
+                                }
+                            }
+
+                            Text {
+                                id: latestText
+                                text: latestVersion
+                                font.pixelSize: pixel(10)
+                                color: Material.accent
+
+
+
+    //                            NumberAnimation {
+    //                                running: true
+    //                                loops: Animation.Infinite
+    //                                properties: "opacity"
+    //                                target: latestText
+    //                                from: 0.0
+    //                                to: 1.0
+    //                                duration: 1000
+    //                            }
+                            }
+
+                            RoundButton {
+                                text: "Update"
+                                radius: pixel(2)
+                                onClicked: {
+                                    appProgressBar.run()
+                                    var latestDownload = appModel.get(index).latestDownload
+                                    var exePath = appModel.get(index).exePath
+                                    firebase.download(latestDownload, exePath)
+                                }
+
+
+                            }
+
+                        }
+                        ProgressBar {
+                            id: appProgressBar
+                            height: pixel(4)
+                            Layout.fillWidth: true
+                            value: 0
+
+                            property bool running: false
+
+                            function run() {
+                                running = true
+                            }
+
+                            function stop() {
+                                running = false
+                                value = 0
+                            }
 
                             NumberAnimation {
-                                running: true
+                                running: appProgressBar.running
                                 loops: Animation.Infinite
-                                properties: "opacity"
-                                target: latestText
+                                properties: "value"
+                                target: appProgressBar
                                 from: 0.0
                                 to: 1.0
                                 duration: 1000
                             }
+
+
                         }
-
-
-
-                        RoundButton {
-                            text: "Update"
-                            radius: pixel(2)
-                            onClicked: {
-//                                console.log(Qt.application.name)
-//                                boothSettings.sync()
-//                                console.log(boothSettings.installDir)
-//                                console.log(boothSettings.version)
-                            }
-                        }
-
                     }
 
 
@@ -214,19 +302,6 @@ Window {
 
                 ListModel {
                     id: appModel
-//                    ListElement {
-//                        name: "PixylBooth"
-//                        version: "0.9"
-//                        path: "C:/PixylBooth"
-//                        latestVersion: "1.0"
-//                    }
-
-//                    ListElement {
-//                        name: "PixylPush"
-//                        version: "0.5"
-//                        path: "C:/PixylBooth"
-//                        latestVersion: "1.0"
-//                    }
 
                 }
             }
@@ -252,21 +327,28 @@ Window {
 
                     RowLayout {}
                 }
-
-
-
             }
-
 
         }
 
         ProgressBar {
             id: progressBar
             Layout.fillWidth: true
-            value: 0.5
+            value: 0
+
+            property bool running: false
+
+            function run() {
+                running = true
+            }
+
+            function stop() {
+                running = false
+                value = 0
+            }
 
             NumberAnimation {
-                running: true
+                running: progressBar.running
                 loops: Animation.Infinite
                 properties: "value"
                 target: progressBar
@@ -290,7 +372,7 @@ Window {
 
                 anchors {
                     fill: parent
-                    margins: pixel(1)
+//                    margins: pixel(1)
                 }
 
                 model: msgModel
@@ -314,6 +396,10 @@ Window {
 
             ListModel {
                 id: msgModel
+
+                function appendMsg(msg) {
+                    msgModel.append({"msg": msg})
+                }
 
 //                ListElement {
 //                    time: "[2019/9/19 9:47 PM]"

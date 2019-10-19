@@ -3,4 +3,9 @@
         <file>main.qml</file>
         <file>qtquickcontrols2.conf</file>
     </qresource>
+    <qresource prefix="/icons">
+        <file alias="apps">Icons/apps.svg</file>
+        <file alias="tune">Icons/tune.svg</file>
+        <file alias="cellphone-arrow-down">Icons/cellphone-arrow-down.svg</file>
+    </qresource>
 </RCC>

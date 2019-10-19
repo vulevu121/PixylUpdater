@@ -18,10 +18,16 @@ public slots:
         return settings.value("version").toString();
     }
 
-    QString installDir(QString const &app) {
+    QString exePath(QString const &app) {
         QSettings settings(org, app);
-        return settings.value("installDir").toString();
+        return settings.value("exePath").toString();
     }
+
+    void setVersion(QString const &app, QString const &ver) {
+        QSettings settings(org, app);
+        settings.setValue("version", ver);
+    }
+
 
 
 private:

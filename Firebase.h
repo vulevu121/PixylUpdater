@@ -15,6 +15,7 @@
 class Firebase : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(bool ready READ ready WRITE setReady)
     Q_PROPERTY(QString idToken READ idToken WRITE setIdToken)
     Q_PROPERTY(QString refreshToken READ refreshToken WRITE setRefreshToken)
 
@@ -27,11 +28,17 @@ private:
     QJsonObject *userInfoJsonObject;
     QString key = "AIzaSyBKWMrLRUNoPpZ9fMshmA3ZD19Wbujk9wU";
     QString m_idToken;
-    QString m_refreshToken;
     QString idToken();
     void setIdToken(const QString &idToken);
+    QString m_refreshToken;
     QString refreshToken();
     void setRefreshToken(const QString &refreshToken);
+    bool m_ready = true;
+    bool ready();
+    void setReady(bool ready);
+    QString savePath;
+    void initManager();
+
 
 signals:
 //    void userNotAuthenticated(const QString &msg);
@@ -43,23 +50,24 @@ signals:
     void authenticationSuccess(const QString &msg);
     void requestError(const QString &msg);
     void status(const QString &msg);
-    void fieldsReceived(QJsonObject json);
+    void documentReceived(QJsonObject json);
+    void downloadCompleted(const QString &savePath);
 
 public slots:
     void authenticate(const QString &user, const QString &password);
     void getUserData();
     void getLatestDownload();
     void getAccountInfo();
-    void downloadLatestRelease(const QString &downloadLink);
-    void getFields(const QString &path);
+    void download(const QString &downloadLink, const QString &savePath);
+    void getDocument(const QString &path);
 
 private slots:
     void authenticateReply(QNetworkReply *reply);
     void getAccountInfoReply(QNetworkReply *reply);
     void getUserDataReply(QNetworkReply *reply);
     void getLatestDownloadReply(QNetworkReply *reply);
-    void downloadLatestReleaseReply(QNetworkReply *reply);
-    void getFieldsReply(QNetworkReply *reply);
+    void downloadReply(QNetworkReply *reply);
+    void getDocumentReply(QNetworkReply *reply);
 };
 
 #endif // FIREBASE_H
