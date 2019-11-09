@@ -15,7 +15,9 @@ signals:
 public slots:
     QString version(QString const &app) {
         QSettings settings(org, app);
-        return settings.value("version").toString();
+        QString version = settings.value("version").toString();
+        version = version.left(version.indexOf(".")+2);
+        return version;
     }
 
     QString exePath(QString const &app) {

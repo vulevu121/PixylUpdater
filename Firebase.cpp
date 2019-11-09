@@ -76,6 +76,8 @@ void Firebase::authenticateReply(QNetworkReply *reply) {
         qDebug() << "[Firebase]" << reply->error() << reply->errorString();
         if (reply->error() == QNetworkReply::HostNotFoundError) {
             emit authenticationError(reply->errorString());
+            emit status("Unable to connect");
+
             return;
         }
 
@@ -89,6 +91,7 @@ void Firebase::authenticateReply(QNetworkReply *reply) {
 
         qDebug() << "[Firebase]" << msg;
         emit authenticationError(msg);
+
 
     } else {
         QByteArray response = reply->readAll();

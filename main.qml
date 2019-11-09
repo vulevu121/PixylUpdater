@@ -23,6 +23,29 @@ Window {
         return p*2;
     }
 
+    function check() {
+        appModel.clear()
+        progressBar.run()
+        var app = "PixylBooth"
+        appModel.append({
+                            "name": app,
+                            "exePath": getSettings.exePath(app),
+                            "version": getSettings.version(app),
+                            "latestVersion": ""
+                        })
+
+        app = "PixylPush"
+        appModel.append({
+                            "name": app,
+                            "exePath": getSettings.exePath(app),
+                            "version": getSettings.version(app),
+                            "latestVersion": ""
+                        })
+
+        firebase.authenticate("vulevu121@gmail.com", "V73911937l")
+    }
+
+
     Firebase {
         id: firebase
 
@@ -65,23 +88,7 @@ Window {
         interval: 500
         running: true
         onTriggered: {
-            progressBar.run()
-            var app = "PixylBooth"
-            appModel.append({
-                                "name": app,
-                                "exePath": getSettings.exePath(app),
-                                "version": getSettings.version(app),
-                                "latestVersion": ""
-                            })
-            app = "PixylPush"
-            appModel.append({
-                                "name": app,
-                                "exePath": getSettings.exePath(app),
-                                "version": getSettings.version(app),
-                                "latestVersion": ""
-                            })
-
-            firebase.authenticate("vulevu121@gmail.com", "V73911937l")
+            check()
         }
     }
 
@@ -166,7 +173,19 @@ Window {
                                 if (path.indexOf("/apps/" + appName.toLowerCase()) >= 0) {
                                     appModel.set(index, {"latestVersion": latestVersion})
                                     appModel.set(index, {"latestDownload": latestDownload})
+                                    if (appModel.get(index).version !== latestVersion) {
+                                        updateButton.visible = true
+                                        updateButton.text = "Update"
+                                        updateButton.enabled = true
+                                    }
+                                    else {
+                                        updateButton.visible = true
+                                        updateButton.text = "Up To Date"
+                                        updateButton.enabled = false
+                                    }
+
                                 }
+
                             }
 
                             onDownloadCompleted: {
@@ -189,8 +208,8 @@ Window {
 
                         Timer {
                             id: checkTimer
-                            interval: (index + 1) * 1000
-                            repeat: true
+                            interval: 1000
+                            repeat: false
                             running: true
 
                             onTriggered: {
@@ -228,7 +247,7 @@ Window {
                                     Layout.fillWidth: true
                                     font.pixelSize: pixel(6)
                                     color: Material.accent
-                                    elide: Text.ElideMiddle
+                                    elide: Text.ElideLeft
 
                                 }
                             }
@@ -253,18 +272,18 @@ Window {
                             }
 
                             RoundButton {
-                                text: "Update"
+                                id: updateButton
+                                text: ""
                                 radius: pixel(2)
+                                visible: false
+                                enabled: false
                                 onClicked: {
                                     appProgressBar.run()
                                     var latestDownload = appModel.get(index).latestDownload
                                     var exePath = appModel.get(index).exePath
                                     firebase.download(latestDownload, exePath)
                                 }
-
-
                             }
-
                         }
                         ProgressBar {
                             id: appProgressBar
@@ -329,6 +348,14 @@ Window {
                 }
             }
 
+        }
+
+        Button {
+            text: "Check"
+            Layout.alignment: Qt.AlignHCenter
+            onClicked: {
+                check()
+            }
         }
 
         ProgressBar {
